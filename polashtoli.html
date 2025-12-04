@@ -1,0 +1,694 @@
+import React, { useState } from 'react';
+import { ShoppingCart, User, Search, Package, LogOut, Trash2, Plus, Minus, Edit2, Mail, Lock, UserPlus, Store, Heart, TrendingUp, Shield } from 'lucide-react';
+
+const PolashtolieCommerce = () => {
+  const [currentPage, setCurrentPage] = useState('landing');
+  const [user, setUser] = useState(null);
+  const [view, setView] = useState('home');
+  const [cart, setCart] = useState([]);
+  const [customers, setCustomers] = useState([
+    { email: 'admin@polashtoli.com', password: 'admin123', role: 'admin', name: 'Admin' }
+  ]);
+  const [products, setProducts] = useState([
+    { id: 1, name: 'Traditional Saree', price: 2500, category: 'Clothing', image: '👗', stock: 15, description: 'Beautiful traditional Bengali saree' },
+    { id: 2, name: 'Leather Bag', price: 1200, category: 'Accessories', image: '👜', stock: 8, description: 'Handcrafted leather bag' },
+    { id: 3, name: 'Pottery Set', price: 850, category: 'Home', image: '🏺', stock: 12, description: 'Traditional clay pottery set' },
+    { id: 4, name: 'Handicraft Wall Art', price: 3200, category: 'Decor', image: '🖼️', stock: 5, description: 'Handmade wall decoration' },
+    { id: 5, name: 'Cotton Kurta', price: 900, category: 'Clothing', image: '👔', stock: 20, description: 'Comfortable cotton kurta' },
+    { id: 6, name: 'Jute Basket', price: 450, category: 'Home', image: '🧺', stock: 25, description: 'Eco-friendly jute basket' },
+  ]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [orders, setOrders] = useState([]);
+
+  const handleSignUp = (formData) => {
+    const exists = customers.find(c => c.email === formData.email);
+    if (exists) {
+      alert('Email already registered!');
+      return;
+    }
+    const newCustomer = { ...formData, role: 'customer' };
+    setCustomers([...customers, newCustomer]);
+    alert('Account created successfully! Please sign in.');
+    setCurrentPage('signin');
+  };
+
+  const handleSignIn = (formData) => {
+    const customer = customers.find(c => c.email === formData.email && c.password === formData.password);
+    if (customer) {
+      setUser(customer);
+      setCurrentPage('app');
+      setView('home');
+    } else {
+      alert('Invalid credentials!');
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setCurrentPage('landing');
+    setView('home');
+    setCart([]);
+  };
+
+  const addToCart = (product) => {
+    const existing = cart.find(item => item.id === product.id);
+    if (existing) {
+      setCart(cart.map(item => 
+        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+      ));
+    } else {
+      setCart([...cart, { ...product, quantity: 1 }]);
+    }
+  };
+
+  const updateQuantity = (id, delta) => {
+    setCart(cart.map(item => {
+      if (item.id === id) {
+        const newQty = item.quantity + delta;
+        return newQty > 0 ? { ...item, quantity: newQty } : item;
+      }
+      return item;
+    }).filter(item => item.quantity > 0));
+  };
+
+  const removeFromCart = (id) => {
+    setCart(cart.filter(item => item.id !== id));
+  };
+
+  const checkout = () => {
+    if (cart.length === 0) return;
+    const order = {
+      id: Date.now(),
+      customerEmail: user.email,
+      items: [...cart],
+      total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      date: new Date().toLocaleString(),
+      status: 'Pending'
+    };
+    setOrders([...orders, order]);
+    setCart([]);
+    alert('Order placed successfully! 🎉');
+    setView('orders');
+  };
+
+  const createProduct = (product) => {
+    setProducts([...products, { ...product, id: Date.now() }]);
+    setEditingProduct(null);
+  };
+
+  const updateProduct = (updated) => {
+    setProducts(products.map(p => p.id === updated.id ? updated : p));
+    setEditingProduct(null);
+  };
+
+  const deleteProduct = (id) => {
+    if (window.confirm('Delete this product?')) {
+      setProducts(products.filter(p => p.id !== id));
+    }
+  };
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const LandingPage = () => (
+    <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-500 to-pink-500">
+      <div className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 py-20">
+          <div className="text-center text-white">
+            <div className="text-9xl mb-6 animate-bounce">🌺</div>
+            <h1 className="text-6xl font-bold mb-4">পলাশতলি</h1>
+            <p className="text-2xl mb-2 opacity-90">Polashtoli Market</p>
+            <p className="text-xl mb-8 opacity-80">Your Trusted Online Marketplace</p>
+            <div className="flex justify-center space-x-4">
+              <button 
+                onClick={() => setCurrentPage('signup')}
+                className="bg-white text-orange-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-orange-50 transform hover:scale-105 transition-all shadow-xl flex items-center space-x-2"
+              >
+                <UserPlus size={24} />
+                <span>Get Started</span>
+              </button>
+              <button 
+                onClick={() => setCurrentPage('signin')}
+                className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-white hover:text-orange-600 transform hover:scale-105 transition-all"
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white py-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-12 text-gray-800">Why Choose Us?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center p-6">
+              <div className="bg-orange-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Store className="text-orange-600" size={40} />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Wide Selection</h3>
+              <p className="text-gray-600">Authentic traditional crafts and modern products</p>
+            </div>
+            <div className="text-center p-6">
+              <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="text-red-600" size={40} />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Secure Shopping</h3>
+              <p className="text-gray-600">Safe and secure payment methods</p>
+            </div>
+            <div className="text-center p-6">
+              <div className="bg-pink-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="text-pink-600" size={40} />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Best Prices</h3>
+              <p className="text-gray-600">Competitive prices on quality products</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-900 text-white py-8">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <p className="mb-2">© 2024 Polashtoli Market. All rights reserved.</p>
+          <p className="text-sm text-gray-400">Made with ❤️ in Bangladesh</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const SignUpPage = () => {
+    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">🌺</div>
+            <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
+            <p className="text-gray-600 mt-2">Join Polashtoli Market today</p>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Enter your name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
+                <input
+                  type="password"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => handleSignUp(formData)}
+              className="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition-colors"
+            >
+              Sign Up
+            </button>
+          </div>
+          
+          <p className="text-center mt-6 text-gray-600">
+            Already have an account?{' '}
+            <button 
+              onClick={() => setCurrentPage('signin')}
+              className="text-orange-600 font-semibold hover:underline"
+            >
+              Sign In
+            </button>
+          </p>
+          
+          <button 
+            onClick={() => setCurrentPage('landing')}
+            className="w-full mt-4 text-gray-600 hover:text-gray-800"
+          >
+            ← Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const SignInPage = () => {
+    const [formData, setFormData] = useState({ email: '', password: '' });
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">🌺</div>
+            <h2 className="text-3xl font-bold text-gray-800">Welcome Back</h2>
+            <p className="text-gray-600 mt-2">Sign in to your account</p>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
+                <input
+                  type="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => handleSignIn(formData)}
+              className="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition-colors"
+            >
+              Sign In
+            </button>
+          </div>
+          
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm font-semibold text-blue-800 mb-2">Demo Credentials:</p>
+            <p className="text-xs text-blue-600">Admin: admin@polashtoli.com / admin123</p>
+          </div>
+          
+          <p className="text-center mt-6 text-gray-600">
+            Don't have an account?{' '}
+            <button 
+              onClick={() => setCurrentPage('signup')}
+              className="text-orange-600 font-semibold hover:underline"
+            >
+              Sign Up
+            </button>
+          </p>
+          
+          <button 
+            onClick={() => setCurrentPage('landing')}
+            className="w-full mt-4 text-gray-600 hover:text-gray-800"
+          >
+            ← Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const Header = () => (
+    <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 shadow-lg">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <span className="text-3xl">🌺</span>
+          <div>
+            <h1 className="text-2xl font-bold">পলাশতলি</h1>
+            <p className="text-xs opacity-90">Polashtoli Market</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-4">
+          <span className="text-sm">Hello, {user?.name}!</span>
+          <button onClick={() => setView('home')} className="hover:bg-white/20 px-3 py-2 rounded">
+            Home
+          </button>
+          {user?.role === 'customer' && (
+            <>
+              <button onClick={() => setView('cart')} className="relative hover:bg-white/20 px-3 py-2 rounded">
+                <ShoppingCart size={20} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-yellow-400 text-red-600 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+              <button onClick={() => setView('orders')} className="hover:bg-white/20 px-3 py-2 rounded">
+                Orders
+              </button>
+            </>
+          )}
+          {user?.role === 'admin' && (
+            <>
+              <button onClick={() => setView('admin')} className="hover:bg-white/20 px-3 py-2 rounded">
+                Manage Products
+              </button>
+              <button onClick={() => setView('all-orders')} className="hover:bg-white/20 px-3 py-2 rounded">
+                All Orders
+              </button>
+            </>
+          )}
+          <button onClick={logout} className="flex items-center space-x-1 hover:bg-white/20 px-3 py-2 rounded">
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const ProductCard = ({ product, isAdmin }) => (
+    <div className="bg-white rounded-lg shadow-md p-4 hover:shadow-xl transition-shadow">
+      <div className="text-6xl text-center mb-3">{product.image}</div>
+      <h3 className="font-bold text-lg mb-1">{product.name}</h3>
+      <p className="text-gray-600 text-sm mb-2">{product.description}</p>
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-orange-600 font-bold text-xl">৳{product.price}</span>
+        <span className="text-sm text-gray-500">Stock: {product.stock}</span>
+      </div>
+      <span className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded mb-3">
+        {product.category}
+      </span>
+      {isAdmin ? (
+        <div className="flex space-x-2">
+          <button onClick={() => setEditingProduct(product)} className="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600 flex items-center justify-center space-x-1">
+            <Edit2 size={16} />
+            <span>Edit</span>
+          </button>
+          <button onClick={() => deleteProduct(product.id)} className="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600 flex items-center justify-center space-x-1">
+            <Trash2 size={16} />
+            <span>Delete</span>
+          </button>
+        </div>
+      ) : (
+        <button 
+          onClick={() => addToCart(product)} 
+          disabled={product.stock === 0}
+          className={`w-full py-2 rounded font-semibold flex items-center justify-center space-x-2 ${
+            product.stock === 0 
+              ? 'bg-gray-300 cursor-not-allowed' 
+              : 'bg-orange-500 text-white hover:bg-orange-600'
+          }`}
+        >
+          <ShoppingCart size={18} />
+          <span>{product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+        </button>
+      )}
+    </div>
+  );
+
+  const ProductForm = ({ product, onSave, onCancel }) => {
+    const [form, setForm] = useState(product || {
+      name: '', price: '', category: '', image: '🛍️', stock: '', description: ''
+    });
+
+    const handleSubmit = () => {
+      if (!form.name || !form.price || !form.category || !form.stock) {
+        alert('Please fill all fields!');
+        return;
+      }
+      onSave(form);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <h3 className="text-xl font-bold mb-4">{product ? 'Edit Product' : 'Create New Product'}</h3>
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Product Name"
+              value={form.name}
+              onChange={(e) => setForm({...form, name: e.target.value})}
+              className="w-full border rounded px-3 py-2"
+            />
+            <input
+              type="number"
+              placeholder="Price"
+              value={form.price}
+              onChange={(e) => setForm({...form, price: Number(e.target.value)})}
+              className="w-full border rounded px-3 py-2"
+            />
+            <input
+              type="text"
+              placeholder="Category"
+              value={form.category}
+              onChange={(e) => setForm({...form, category: e.target.value})}
+              className="w-full border rounded px-3 py-2"
+            />
+            <input
+              type="text"
+              placeholder="Emoji (e.g., 🎨)"
+              value={form.image}
+              onChange={(e) => setForm({...form, image: e.target.value})}
+              className="w-full border rounded px-3 py-2"
+            />
+            <input
+              type="number"
+              placeholder="Stock"
+              value={form.stock}
+              onChange={(e) => setForm({...form, stock: Number(e.target.value)})}
+              className="w-full border rounded px-3 py-2"
+            />
+            <textarea
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm({...form, description: e.target.value})}
+              className="w-full border rounded px-3 py-2"
+              rows="3"
+            />
+          </div>
+          <div className="flex space-x-2 mt-4">
+            <button onClick={handleSubmit} className="flex-1 bg-green-500 text-white py-2 rounded hover:bg-green-600">
+              {product ? 'Update' : 'Create'}
+            </button>
+            <button onClick={onCancel} className="flex-1 bg-gray-300 py-2 rounded hover:bg-gray-400">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (currentPage === 'landing') return <LandingPage />;
+  if (currentPage === 'signup') return <SignUpPage />;
+  if (currentPage === 'signin') return <SignInPage />;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+      <Header />
+      
+      <div className="max-w-7xl mx-auto p-6">
+        {view === 'home' ? (
+          <div>
+            <div className="mb-6 relative">
+              <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map(product => (
+                <ProductCard key={product.id} product={product} isAdmin={false} />
+              ))}
+            </div>
+          </div>
+        ) : view === 'cart' ? (
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
+              <ShoppingCart />
+              <span>Shopping Cart</span>
+            </h2>
+            {cart.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg shadow">
+                <ShoppingCart size={64} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-600">Your cart is empty</p>
+              </div>
+            ) : (
+              <>
+                {cart.map(item => (
+                  <div key={item.id} className="bg-white rounded-lg shadow p-4 mb-3 flex items-center space-x-4">
+                    <div className="text-4xl">{item.image}</div>
+                    <div className="flex-1">
+                      <h3 className="font-bold">{item.name}</h3>
+                      <p className="text-orange-600 font-semibold">৳{item.price}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button onClick={() => updateQuantity(item.id, -1)} className="bg-gray-200 p-1 rounded hover:bg-gray-300">
+                        <Minus size={16} />
+                      </button>
+                      <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, 1)} className="bg-gray-200 p-1 rounded hover:bg-gray-300">
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700">
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                ))}
+                <div className="bg-white rounded-lg shadow p-6 mt-6">
+                  <div className="flex justify-between text-xl font-bold mb-4">
+                    <span>Total:</span>
+                    <span className="text-orange-600">৳{cartTotal}</span>
+                  </div>
+                  <button onClick={checkout} className="w-full bg-green-500 text-white py-3 rounded-lg font-bold hover:bg-green-600">
+                    Place Order
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : view === 'orders' ? (
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
+              <Package />
+              <span>My Orders</span>
+            </h2>
+            {orders.filter(o => o.customerEmail === user.email).length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg shadow">
+                <Package size={64} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-600">No orders yet</p>
+              </div>
+            ) : (
+              orders.filter(o => o.customerEmail === user.email).map(order => (
+                <div key={order.id} className="bg-white rounded-lg shadow p-6 mb-4">
+                  <div className="flex justify-between mb-4">
+                    <div>
+                      <p className="font-semibold">Order #{order.id}</p>
+                      <p className="text-sm text-gray-600">{order.date}</p>
+                    </div>
+                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-sm font-semibold h-fit">
+                      {order.status}
+                    </span>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    {order.items.map(item => (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span>{item.name} x {item.quantity}</span>
+                        <span>৳{item.price * item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t pt-2 flex justify-between font-bold">
+                    <span>Total:</span>
+                    <span className="text-orange-600">৳{order.total}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : view === 'admin' ? (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Product Management (CRUD)</h2>
+              <button 
+                onClick={() => setEditingProduct({})} 
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center space-x-2"
+              >
+                <Plus size={20} />
+                <span>Add Product</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map(product => (
+                <ProductCard key={product.id} product={product} isAdmin={true} />
+              ))}
+            </div>
+          </div>
+        ) : view === 'all-orders' ? (
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6">All Orders</h2>
+            {orders.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg shadow">
+                <Package size={64} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-600">No orders yet</p>
+              </div>
+            ) : (
+              orders.map(order => (
+                <div key={order.id} className="bg-white rounded-lg shadow p-6 mb-4">
+                  <div className="flex justify-between mb-4">
+                    <div>
+                      <p className="font-semibold">Order #{order.id}</p>
+                      <p className="text-sm text-gray-600">{order.date}</p>
+                      <p className="text-sm text-gray-500">Customer: {order.customerEmail}</p>
+                    </div>
+                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-sm font-semibold h-fit">
+                      {order.status}
+                    </span>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    {order.items.map(item => (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span>{item.name} x {item.quantity}</span>
+                        <span>৳{item.price * item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t pt-2 flex justify-between font-bold">
+                    <span>Total:</span>
+                    <span className="text-orange-600">৳{order.total}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : null}
+      </div>
+
+      {editingProduct && (
+        <ProductForm 
+          product={editingProduct.id ? editingProduct : null}
+          onSave={(data) => {
+            if (editingProduct.id) {
+              updateProduct(data);
+            } else {
+              createProduct(data);
+            }
+          }}
+          onCancel={() => setEditingProduct(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default PolashtolieCommerce;
