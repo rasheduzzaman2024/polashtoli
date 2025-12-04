@@ -4,7 +4,7 @@ let currentPage = 'landing';
 let user = null;
 let view = 'home';
 let cart = [];
-let editingProduct = null;
+let editingProduct = null; // Used for CRUD modal
 
 let customers = [
     { email: 'admin@polashtoli.com', password: 'admin123', role: 'admin', name: 'Admin' }
@@ -25,7 +25,7 @@ let searchQuery = '';
 const getCartCount = () => cart.reduce((sum, item) => sum + item.quantity, 0);
 const getCartTotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-// --- Core Logic Functions ---
+// --- Auth & Cart Logic Functions ---
 
 function handleSignIn(email, password) {
     const customer = customers.find(c => c.email === email && c.password === password);
@@ -47,9 +47,15 @@ function logout() {
     renderApp();
 }
 
+/** * Makes the homepage dynamic by adding product to cart and immediately
+ * refreshing the current view (Home or Cart) and Header (for badge count).
+ */
 function addToCart(productId) {
     const product = products.find(p => p.id === productId);
     if (!product || product.stock === 0) return;
+
+    // Optional: Reduce stock count locally (for a more complete simulation)
+    // product.stock--; 
 
     const existing = cart.find(item => item.id === productId);
     if (existing) {
@@ -59,8 +65,11 @@ function addToCart(productId) {
     } else {
         cart.push({ ...product, quantity: 1 });
     }
-    renderHeader(); // Update cart count in header
-    if (view === 'cart') renderApp(); // Rerender cart view if active
+    
+    // Rerender only necessary parts for efficiency
+    renderHeader(); 
+    if (view === 'home') renderHomeView(); 
+    if (view === 'cart') renderCartView(); 
 }
 
 function updateQuantity(id, delta) {
@@ -71,7 +80,7 @@ function updateQuantity(id, delta) {
         }
         return item;
     }).filter(item => item.quantity > 0);
-    renderApp();
+    renderApp(); // Rerenders cart and header
 }
 
 function removeFromCart(id) {
@@ -86,7 +95,7 @@ function checkout() {
     const order = {
         id: Date.now(),
         customerEmail: user.email,
-        items: JSON.parse(JSON.stringify(cart)), // Deep copy cart items
+        items: JSON.parse(JSON.stringify(cart)), 
         total: getCartTotal(),
         date: new Date().toLocaleString(),
         status: 'Pending'
@@ -97,6 +106,8 @@ function checkout() {
     view = 'orders';
     renderApp();
 }
+
+// --- Admin CRUD Logic ---
 
 function createProduct(data) {
     products.push({ ...data, id: Date.now(), price: Number(data.price), stock: Number(data.stock) });
@@ -117,7 +128,7 @@ function deleteProduct(id) {
     }
 }
 
-// --- Rendering Functions (DOM Manipulation) ---
+// --- Rendering Functions (DOM Manipulation - Same as previous response) ---
 
 function renderHeader() {
     const headerEl = document.getElementById('header');
@@ -129,14 +140,15 @@ function renderHeader() {
     const cartCount = getCartCount();
     const isAdmin = user.role === 'admin';
     
+    // Using simple HTML structure for the header
     headerEl.innerHTML = `
         <div class="header-content">
             <div class="logo">
-                <h1 onclick="setView('home')">🌺 পলাশতলি</h1>
+                <h1 onclick="setView('home')" style="cursor: pointer;">🌺 পলাশতলি</h1>
                 <p style="font-size: 10px;">Polashtoli Market</p>
             </div>
             <div class="nav-buttons">
-                <span>Hello, ${user.name}!</span>
+                <span style="margin-right: 15px;">Hello, **${user.name}**!</span>
                 <button onclick="setView('home')">Home</button>
                 ${!isAdmin ? `
                     <button onclick="setView('cart')" style="position: relative;">
@@ -152,6 +164,8 @@ function renderHeader() {
         </div>
     `;
 }
+
+// ... (renderLandingPage, renderSignInPage, attemptSignIn, renderSignUpPage, attemptSignUp functions remain the same) ...
 
 function renderLandingPage() {
     const container = document.getElementById('app-container');
@@ -177,7 +191,7 @@ function renderSignInPage() {
             <input type="email" id="signin-email" placeholder="Email" value="admin@polashtoli.com">
             <input type="password" id="signin-password" placeholder="Password" value="admin123">
             <button class="btn-primary" onclick="attemptSignIn()">Sign In</button>
-            <p style="margin-top: 15px; font-size: 14px;">Demo: admin@polashtoli.com / admin123</p>
+            <p style="margin-top: 15px; font-size: 14px;">Demo: **admin@polashtoli.com** / **admin123**</p>
             <button style="margin-top: 20px; border: none; background: none; color: #ff5722;" onclick="setCurrentPage('signup')">Need an account? Sign Up</button>
             <button style="border: none; background: none; color: #777;" onclick="setCurrentPage('landing')">← Back to Home</button>
         </div>
@@ -230,6 +244,7 @@ function attemptSignUp() {
 
 
 function renderProductCard(product, isAdmin) {
+    // This function provides the dynamic HTML for a single product card
     const btnHtml = isAdmin ? `
         <div class="flex space-x-4">
             <button class="btn-primary" style="background-color: #2196F3; flex: 1;" onclick="editProduct(${product.id})">Edit</button>
@@ -386,7 +401,7 @@ function renderAdminView() {
     container.innerHTML = `
         <div class="flex justify-between items-center" style="margin-bottom: 20px;">
             <h2 style="font-size: 24px; font-weight: bold;">Product Management (CRUD)</h2>
-            <button class="btn-primary" style="background-color: #4CAF50; width: auto;" onclick="setEditingProduct(null)">➕ Add Product</button>
+            <button class="btn-primary" style="background-color: #4CAF50; width: auto;" onclick="setEditingProduct({})">➕ Add Product</button>
         </div>
         <div class="product-grid">
             ${productsHtml || '<p class="text-center text-gray">No products available.</p>'}
@@ -437,7 +452,7 @@ function renderAllOrdersView() {
 
 function renderProductFormModal() {
     const modalContainer = document.getElementById('modal-container');
-    if (!editingProduct && editingProduct !== null) return; // Check if editingProduct is explicitly null (cancelled)
+    if (!editingProduct && editingProduct !== null) return; 
 
     const isEditing = editingProduct && editingProduct.id;
     const productData = isEditing ? editingProduct : { name: '', price: '', category: '', image: '🛍️', stock: '', description: '' };
@@ -450,7 +465,9 @@ function renderProductFormModal() {
                     <input type="text" id="p-name" placeholder="Product Name" value="${productData.name}" />
                     <input type="number" id="p-price" placeholder="Price" value="${productData.price}" />
                     <input type="text" id="p-category" placeholder="Category" value="${productData.category}" />
-                    <input type="text" id="p-image" placeholder="Emoji (e.g., 🎨)" value="${productData.image}" />
+                    
+                    <input type="text" id="p-image" placeholder="Emoji (e.g., 🎨) - acts as image upload" value="${productData.image}" />
+                    
                     <input type="number" id="p-stock" placeholder="Stock" value="${productData.stock}" />
                     <textarea id="p-description" placeholder="Description" rows="3">${productData.description}</textarea>
                 </div>
@@ -490,6 +507,7 @@ function saveProduct() {
     cancelEditingProduct();
 }
 
+
 // --- State Mutators and Main Renderer ---
 
 function setCurrentPage(newPage) {
@@ -520,7 +538,7 @@ function cancelEditingProduct() {
 function renderApp() {
     renderHeader();
     const appContainer = document.getElementById('app-container');
-    document.getElementById('modal-container').innerHTML = ''; // Clear modal container
+    document.getElementById('modal-container').innerHTML = ''; 
 
     if (currentPage === 'landing') {
         renderLandingPage();
@@ -540,7 +558,6 @@ function renderApp() {
         } else if (view === 'all-orders' && user.role === 'admin') {
             renderAllOrdersView();
         } else {
-            // Default to home if view is invalid for role
             view = 'home';
             renderHomeView();
         }
@@ -551,45 +568,5 @@ function renderApp() {
     }
 }
 
-// --- Initialization ---
-
 // Start the application
 document.addEventListener('DOMContentLoaded', renderApp);
-
-/* --- Python and Data Visualization Placeholder ---
-
-If data visualization were required (e.g., showing sales trends, product popularity), 
-the JavaScript would make an AJAX call to a backend (like a Python Flask/Django server).
-
-Example Python/Pandas logic for a sales chart:
-
-1.  **Backend Route (e.g., Flask):**
-    ```python
-    @app.route('/api/sales_data')
-    def get_sales_data():
-        # Load or generate order data
-        order_data = get_orders_from_db() # orders data from JS equivalent
-        df = pd.DataFrame(order_data)
-        
-        # Calculate monthly sales
-        df['date'] = pd.to_datetime(df['date'])
-        df['month'] = df['date'].dt.to_period('M')
-        monthly_sales = df.groupby('month')['total'].sum().reset_index()
-        
-        # Convert to JSON for frontend
-        return jsonify(monthly_sales.to_dict(orient='records'))
-    ```
-
-2.  **Frontend (JavaScript):**
-    The JS would fetch this data and use a library like **Chart.js** or **D3.js** to render it.
-
-    ```javascript
-    async function renderSalesChart() {
-        const response = await fetch('/api/sales_data');
-        const salesData = await response.json();
-        
-        // ... use salesData to initialize a Chart.js instance
-    }
-    ```
-This complete client-side conversion, however, does not require Python.
-*/
